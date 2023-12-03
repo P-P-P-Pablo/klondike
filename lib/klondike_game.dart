@@ -36,7 +36,7 @@ class KlondikeGame extends FlameGame {
           Vector2(cardWidth + 2 * cardGap, cardGap);
     final foundations = List.generate(
       4,
-      (i) => FoundationPile()
+      (i) => FoundationPile(i)
         ..size = cardSize
         ..position = Vector2(
             (i + 3) * (cardWidth + cardGap) + cardGap,
