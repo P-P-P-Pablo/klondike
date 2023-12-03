@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/flame.dart';
@@ -18,20 +18,25 @@ class KlondikeGame extends FlameGame {
   static final Vector2 cardSize =
       Vector2(cardWidth, cardHeight);
 
+  static final cardRRect = RRect.fromRectAndRadius(
+    const Rect.fromLTWH(0, 0, cardWidth, cardHeight),
+    const Radius.circular(cardRadius),
+  );
+
   @override
   Future<void> onLoad() async {
     await Flame.images.load('klondike-sprites.png');
 
-    final stock = Stock()
+    final stock = StockPile()
       ..size = cardSize
       ..position = Vector2(cardGap, cardGap);
-    final waste = Waste()
+    final waste = WastePile()
       ..size = cardSize
       ..position =
           Vector2(cardWidth + 2 * cardGap, cardGap);
     final foundations = List.generate(
       4,
-      (i) => Foundation()
+      (i) => FoundationPile()
         ..size = cardSize
         ..position = Vector2(
             (i + 3) * (cardWidth + cardGap) + cardGap,
@@ -39,7 +44,7 @@ class KlondikeGame extends FlameGame {
     );
     final piles = List.generate(
       7,
-      (i) => Pile()
+      (i) => TableauPile()
         ..size = cardSize
         ..position = Vector2(
           cardGap + i * (cardWidth + cardGap),
@@ -59,20 +64,15 @@ class KlondikeGame extends FlameGame {
         Vector2(cardWidth * 3.5 + cardGap * 4, 0);
     camera.viewfinder.anchor = Anchor.topCenter;
 
-    final random = Random();
-    for (var i = 0; i < 7; i++) {
-      for (var j = 0; j < 4; j++) {
-        final card =
-            Card(random.nextInt(13) + 1, random.nextInt(4))
-              ..position =
-                  Vector2(100 + i * 1150, 100 + j * 1500)
-              ..addToParent(world);
-        if (random.nextDouble() < 0.9) {
-          // flip face up with 90% probability
-          card.flip();
-        }
-      }
-    }
+    final cards = [
+      for (var rank = 1; rank <= 13; rank++)
+        for (var suit = 0; suit < 4; suit++)
+          Card(rank, suit)
+    ];
+
+    world.addAll(cards);
+    cards.shuffle();
+    cards.forEach(stock.acquireCard);
   }
 }
 
