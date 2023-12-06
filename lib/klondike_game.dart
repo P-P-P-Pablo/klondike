@@ -21,6 +21,8 @@ class KlondikeGame extends FlameGame {
     const Rect.fromLTWH(0, 0, cardWidth, cardHeight),
     const Radius.circular(cardRadius),
   );
+  // final int klondikeDraw = 3;
+  final int klondikeDraw = 1;
 
   @override
   Future<void> onLoad() async {
