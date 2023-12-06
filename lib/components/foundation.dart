@@ -35,7 +35,8 @@ class FoundationPile extends PositionComponent
     final topCardRank =
         _cards.isEmpty ? 0 : _cards.last.rank.value;
     return card.suit == suit &&
-        card.rank.value == topCardRank + 1;
+        card.rank.value == topCardRank + 1 &&
+        card.attachedCards.isEmpty;
   }
 
   @override

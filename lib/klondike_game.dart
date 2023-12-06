@@ -6,7 +6,7 @@ import 'package:flame/game.dart';
 
 import 'components/card.dart';
 import 'components/foundation.dart';
-import 'components/tableaupile.dart';
+import 'components/tableau_pile.dart';
 import 'components/stock.dart';
 import 'components/waste.dart';
 

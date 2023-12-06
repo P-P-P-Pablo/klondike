@@ -8,6 +8,7 @@ import '../klondike_game.dart';
 import '../models/pile.dart';
 import '../models/rank.dart';
 import '../models/suit.dart';
+import 'tableau_pile.dart';
 
 class Card extends PositionComponent with DragCallbacks {
   Card(int intRank, int intSuit)
@@ -20,6 +21,8 @@ class Card extends PositionComponent with DragCallbacks {
   final Suit suit;
   bool _faceUp;
   Pile? pile;
+
+  final List<Card> attachedCards = [];
 
   bool get isFaceUp => _faceUp;
   bool get isFaceDown => !_faceUp;
@@ -258,6 +261,15 @@ class Card extends PositionComponent with DragCallbacks {
     if (pile?.canMoveCard(this) ?? false) {
       super.onDragStart(event);
       priority = 100;
+      if (pile is TableauPile) {
+        attachedCards.clear();
+        final extraCards =
+            (pile! as TableauPile).cardsOnTop(this);
+        for (final card in extraCards) {
+          card.priority = attachedCards.length + 101;
+          attachedCards.add(card);
+        }
+      }
     }
   }
 
@@ -266,7 +278,10 @@ class Card extends PositionComponent with DragCallbacks {
     if (!isDragged) {
       return;
     }
-    position += event.delta;
+    final delta = event.delta;
+    position.add(delta);
+    attachedCards
+        .forEach((card) => card.position.add(delta));
   }
 
   @override
@@ -283,9 +298,19 @@ class Card extends PositionComponent with DragCallbacks {
       if (dropPiles.first.canAcceptCard(this)) {
         pile!.removeCard(this);
         dropPiles.first.acquireCard(this);
+        if (attachedCards.isNotEmpty) {
+          attachedCards.forEach(
+              (card) => dropPiles.first.acquireCard(card));
+          attachedCards.clear();
+        }
         return;
       }
     }
     pile!.returnCard(this);
+    if (attachedCards.isNotEmpty) {
+      attachedCards
+          .forEach((card) => pile!.returnCard(card));
+      attachedCards.clear();
+    }
   }
 }
