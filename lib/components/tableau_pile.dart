@@ -9,22 +9,14 @@ class TableauPile extends PositionComponent
   TableauPile({super.position})
       : super(size: KlondikeGame.cardSize);
 
-  final _borderPaint = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 10
-    ..color = const Color(0x50ffffff);
-
+  /// Which cards are currently placed onto this pile.
   final List<Card> _cards = [];
-
   final Vector2 _fanOffset1 =
       Vector2(0, KlondikeGame.cardHeight * 0.05);
   final Vector2 _fanOffset2 =
       Vector2(0, KlondikeGame.cardHeight * 0.20);
 
-  @override
-  void render(Canvas canvas) {
-    canvas.drawRRect(KlondikeGame.cardRRect, _borderPaint);
-  }
+  //#region Pile API
 
   @override
   bool canMoveCard(Card card) => card.isFaceUp;
@@ -65,17 +57,11 @@ class TableauPile extends PositionComponent
     layOutCards();
   }
 
+  //#endregion
+
   void flipTopCard() {
     assert(_cards.last.isFaceDown);
     _cards.last.flip();
-  }
-
-  List<Card> cardsOnTop(Card card) {
-    assert(card.isFaceUp && _cards.contains(card));
-    final index = _cards.indexOf(card);
-    return _cards
-        .getRange(index + 1, _cards.length)
-        .toList();
   }
 
   void layOutCards() {
@@ -94,4 +80,26 @@ class TableauPile extends PositionComponent
         _cards.last.y -
         _cards.first.y;
   }
+
+  List<Card> cardsOnTop(Card card) {
+    assert(card.isFaceUp && _cards.contains(card));
+    final index = _cards.indexOf(card);
+    return _cards
+        .getRange(index + 1, _cards.length)
+        .toList();
+  }
+
+  //#region Rendering
+
+  final _borderPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 10
+    ..color = const Color(0x50ffffff);
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawRRect(KlondikeGame.cardRRect, _borderPaint);
+  }
+
+  //#endregion
 }

@@ -17,7 +17,6 @@ class Suit {
       : sprite = klondikeSprite(x, y, w, h);
 
   final int value;
-
   final String label;
   final Sprite sprite;
 

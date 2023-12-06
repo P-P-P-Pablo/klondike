@@ -14,16 +14,11 @@ class StockPile extends PositionComponent
   StockPile({super.position})
       : super(size: KlondikeGame.cardSize);
 
+  /// Which cards are currently placed onto this pile. The first card in the
+  /// list is at the bottom, the last card is on top.
   final List<Card> _cards = [];
 
-  final _borderPaint = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 10
-    ..color = const Color(0xFF3F5B5D);
-  final _circlePaint = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 100
-    ..color = const Color(0x883F5B5D);
+  //#region Pile API
 
   @override
   bool canMoveCard(Card card) => false;
@@ -33,20 +28,22 @@ class StockPile extends PositionComponent
 
   @override
   void removeCard(Card card) =>
-      throw StateError('cannot remove cards from here');
+      throw StateError('cannot remove cards');
 
   @override
   void returnCard(Card card) =>
-      throw StateError('cannot remove cards from here');
+      throw StateError('cannot remove cards');
 
   @override
   void acquireCard(Card card) {
-    assert(!card.isFaceUp);
+    assert(card.isFaceDown);
+    card.pile = this;
     card.position = position;
     card.priority = _cards.length;
     _cards.add(card);
-    card.pile = this;
   }
+
+  //#endregion
 
   @override
   void onTapUp(TapUpEvent event) {
@@ -67,6 +64,17 @@ class StockPile extends PositionComponent
     }
   }
 
+  //#region Rendering
+
+  final _borderPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 10
+    ..color = const Color(0xFF3F5B5D);
+  final _circlePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 100
+    ..color = const Color(0x883F5B5D);
+
   @override
   void render(Canvas canvas) {
     canvas.drawRRect(KlondikeGame.cardRRect, _borderPaint);
@@ -76,4 +84,6 @@ class StockPile extends PositionComponent
       _circlePaint,
     );
   }
+
+  //#endregion
 }

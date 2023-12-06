@@ -14,19 +14,33 @@ class Card extends PositionComponent with DragCallbacks {
   Card(int intRank, int intSuit)
       : rank = Rank.fromInt(intRank),
         suit = Suit.fromInt(intSuit),
-        _faceUp = false,
         super(size: KlondikeGame.cardSize);
 
   final Rank rank;
   final Suit suit;
-  bool _faceUp;
   Pile? pile;
-
+  bool _faceUp = false;
+  bool _isDragging = false;
   final List<Card> attachedCards = [];
 
   bool get isFaceUp => _faceUp;
   bool get isFaceDown => !_faceUp;
   void flip() => _faceUp = !_faceUp;
+
+  @override
+  String toString() =>
+      rank.label + suit.label; // e.g. "Q♠" or "10♦"
+
+  //#region Rendering
+
+  @override
+  void render(Canvas canvas) {
+    if (_faceUp) {
+      _renderFront(canvas);
+    } else {
+      _renderBack(canvas);
+    }
+  }
 
   static final Paint backBackgroundPaint = Paint()
     ..color = const Color(0xff380c02);
@@ -38,6 +52,21 @@ class Card extends PositionComponent with DragCallbacks {
     ..color = const Color(0x5CEF971B)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 35;
+  static final RRect cardRRect = RRect.fromRectAndRadius(
+    KlondikeGame.cardSize.toRect(),
+    const Radius.circular(KlondikeGame.cardRadius),
+  );
+  static final RRect backRRectInner = cardRRect.deflate(40);
+  static final Sprite flameSprite =
+      klondikeSprite(1367, 6, 357, 501);
+
+  void _renderBack(Canvas canvas) {
+    canvas.drawRRect(cardRRect, backBackgroundPaint);
+    canvas.drawRRect(cardRRect, backBorderPaint1);
+    canvas.drawRRect(backRRectInner, backBorderPaint2);
+    flameSprite.render(canvas,
+        position: size / 2, anchor: Anchor.center);
+  }
 
   static final Paint frontBackgroundPaint = Paint()
     ..color = const Color(0xff000000);
@@ -49,19 +78,17 @@ class Card extends PositionComponent with DragCallbacks {
     ..color = const Color(0xff7ab2e8)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 10;
-
+  static final blueFilter = Paint()
+    ..colorFilter = const ColorFilter.mode(
+      Color(0x880d8bff),
+      BlendMode.srcATop,
+    );
   static final Sprite redJack =
       klondikeSprite(81, 565, 562, 488);
   static final Sprite redQueen =
       klondikeSprite(717, 541, 486, 515);
   static final Sprite redKing =
       klondikeSprite(1305, 532, 407, 549);
-
-  static final blueFilter = Paint()
-    ..colorFilter = const ColorFilter.mode(
-      Color(0x880d8bff),
-      BlendMode.srcATop,
-    );
   static final Sprite blackJack =
       klondikeSprite(81, 565, 562, 488)..paint = blueFilter;
   static final Sprite blackQueen =
@@ -70,52 +97,6 @@ class Card extends PositionComponent with DragCallbacks {
   static final Sprite blackKing =
       klondikeSprite(1305, 532, 407, 549)
         ..paint = blueFilter;
-
-  static final RRect cardRRect = RRect.fromRectAndRadius(
-    KlondikeGame.cardSize.toRect(),
-    const Radius.circular(KlondikeGame.cardRadius),
-  );
-  static final RRect backRRectInner = cardRRect.deflate(40);
-  static final Sprite flameSprite =
-      klondikeSprite(1367, 6, 357, 501);
-
-  @override
-  String toString() => rank.label + suit.label;
-
-  @override
-  void render(Canvas canvas) {
-    if (_faceUp) {
-      _renderFront(canvas);
-    } else {
-      _renderBack(canvas);
-    }
-  }
-
-  void _drawSprite(
-    Canvas canvas,
-    Sprite sprite,
-    double relativeX,
-    double relativeY, {
-    double scale = 1,
-    bool rotate = false,
-  }) {
-    if (rotate) {
-      canvas.save();
-      canvas.translate(size.x / 2, size.y / 2);
-      canvas.rotate(pi);
-      canvas.translate(-size.x / 2, -size.y / 2);
-    }
-    sprite.render(
-      canvas,
-      position:
-          Vector2(relativeX * size.x, relativeY * size.y),
-      anchor: Anchor.center,
-      size: sprite.srcSize.scaled(scale),
-    );
-    if (rotate) {
-      canvas.restore();
-    }
-  }
 
   void _renderFront(Canvas canvas) {
     canvas.drawRRect(cardRRect, frontBackgroundPaint);
@@ -128,12 +109,11 @@ class Card extends PositionComponent with DragCallbacks {
         suit.isBlack ? rank.blackSprite : rank.redSprite;
     final suitSprite = suit.sprite;
     _drawSprite(canvas, rankSprite, 0.1, 0.08);
+    _drawSprite(canvas, suitSprite, 0.1, 0.18, scale: 0.5);
     _drawSprite(canvas, rankSprite, 0.1, 0.08,
         rotate: true);
-    _drawSprite(canvas, suitSprite, 0.1, 0.18, scale: 0.5);
     _drawSprite(canvas, suitSprite, 0.1, 0.18,
         scale: 0.5, rotate: true);
-
     switch (rank.value) {
       case 1:
         _drawSprite(canvas, suitSprite, 0.5, 0.5,
@@ -248,18 +228,41 @@ class Card extends PositionComponent with DragCallbacks {
     }
   }
 
-  void _renderBack(Canvas canvas) {
-    canvas.drawRRect(cardRRect, backBackgroundPaint);
-    canvas.drawRRect(cardRRect, backBorderPaint1);
-    canvas.drawRRect(backRRectInner, backBorderPaint2);
-    flameSprite.render(canvas,
-        position: size / 2, anchor: Anchor.center);
+  void _drawSprite(
+    Canvas canvas,
+    Sprite sprite,
+    double relativeX,
+    double relativeY, {
+    double scale = 1,
+    bool rotate = false,
+  }) {
+    if (rotate) {
+      canvas.save();
+      canvas.translate(size.x / 2, size.y / 2);
+      canvas.rotate(pi);
+      canvas.translate(-size.x / 2, -size.y / 2);
+    }
+    sprite.render(
+      canvas,
+      position:
+          Vector2(relativeX * size.x, relativeY * size.y),
+      anchor: Anchor.center,
+      size: sprite.srcSize.scaled(scale),
+    );
+    if (rotate) {
+      canvas.restore();
+    }
   }
+
+  //#endregion
+
+  //#region Dragging
 
   @override
   void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
     if (pile?.canMoveCard(this) ?? false) {
-      super.onDragStart(event);
+      _isDragging = true;
       priority = 100;
       if (pile is TableauPile) {
         attachedCards.clear();
@@ -275,10 +278,10 @@ class Card extends PositionComponent with DragCallbacks {
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
-    if (!isDragged) {
+    if (!_isDragging) {
       return;
     }
-    final delta = event.delta;
+    final delta = event.localDelta;
     position.add(delta);
     attachedCards
         .forEach((card) => card.position.add(delta));
@@ -286,10 +289,11 @@ class Card extends PositionComponent with DragCallbacks {
 
   @override
   void onDragEnd(DragEndEvent event) {
-    if (!isDragged) {
+    super.onDragEnd(event);
+    if (!_isDragging) {
       return;
     }
-    super.onDragEnd(event);
+    _isDragging = false;
     final dropPiles = parent!
         .componentsAtPoint(position + size / 2)
         .whereType<Pile>()
@@ -313,4 +317,6 @@ class Card extends PositionComponent with DragCallbacks {
       attachedCards.clear();
     }
   }
+
+  //#endregion
 }
