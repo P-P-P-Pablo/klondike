@@ -2,7 +2,9 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
+import 'package:flutter/animation.dart';
 
 import '../klondike_game.dart';
 import '../models/pile.dart';
@@ -21,6 +23,7 @@ class Card extends PositionComponent with DragCallbacks {
   Pile? pile;
   bool _faceUp = false;
   bool _isDragging = false;
+  Vector2 _whereCardStarted = Vector2(0, 0);
   final List<Card> attachedCards = [];
 
   bool get isFaceUp => _faceUp;
@@ -264,6 +267,8 @@ class Card extends PositionComponent with DragCallbacks {
     if (pile?.canMoveCard(this) ?? false) {
       _isDragging = true;
       priority = 100;
+      // Copy each co-ord, else _whereCardStarted changes as the position does.
+      _whereCardStarted = Vector2(position.x, position.y);
       if (pile is TableauPile) {
         attachedCards.clear();
         final extraCards =
@@ -283,8 +288,9 @@ class Card extends PositionComponent with DragCallbacks {
     }
     final delta = event.localDelta;
     position.add(delta);
-    attachedCards
-        .forEach((card) => card.position.add(delta));
+    for (var card in attachedCards) {
+      card.position.add(delta);
+    }
   }
 
   @override
@@ -302,9 +308,23 @@ class Card extends PositionComponent with DragCallbacks {
       if (dropPiles.first.canAcceptCard(this)) {
         pile!.removeCard(this);
         dropPiles.first.acquireCard(this);
+        // Invalid drop (middle of nowhere, invalid pile or invalid card for pile).
+        doMove(
+          _whereCardStarted,
+          onComplete: () {
+            pile!.returnCard(this);
+          },
+        );
         if (attachedCards.isNotEmpty) {
-          attachedCards.forEach(
-              (card) => dropPiles.first.acquireCard(card));
+          for (var card in attachedCards) {
+            final offset = card.position - position;
+            card.doMove(
+              _whereCardStarted + offset,
+              onComplete: () {
+                pile!.returnCard(card);
+              },
+            );
+          }
           attachedCards.clear();
         }
         return;
@@ -312,11 +332,39 @@ class Card extends PositionComponent with DragCallbacks {
     }
     pile!.returnCard(this);
     if (attachedCards.isNotEmpty) {
-      attachedCards
-          .forEach((card) => pile!.returnCard(card));
+      for (var card in attachedCards) {
+        pile!.returnCard(card);
+      }
       attachedCards.clear();
     }
   }
 
+  //#endregion
+
+  //#region Effect
+
+  void doMove(
+    Vector2 to, {
+    double speed = 10.0,
+    double start = 0.0,
+    Curve curve = Curves.easeOutQuad,
+    VoidCallback? onComplete,
+  }) {
+    assert(
+        speed > 0.0, 'Speed must be > 0 widths per second');
+    final dt = (to - position).length / (speed * size.x);
+    assert(dt > 0.0, 'Distance to move must be > 0');
+    priority = 100;
+    add(
+      MoveToEffect(
+        to,
+        EffectController(
+            duration: dt, startDelay: start, curve: curve),
+        onComplete: () {
+          onComplete?.call();
+        },
+      ),
+    );
+  }
   //#endregion
 }
