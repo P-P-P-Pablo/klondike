@@ -17,15 +17,16 @@ class WastePile extends PositionComponent
   //#region Pile API
 
   @override
-  bool canMoveCard(Card card) =>
-      _cards.isNotEmpty && card == _cards.last;
+  bool canMoveCard(Card card, MoveMethod method) =>
+      _cards.isNotEmpty &&
+      card == _cards.last; // Tap and drag are both OK.
 
   @override
   bool canAcceptCard(Card card) => false;
 
   @override
-  void removeCard(Card card) {
-    assert(canMoveCard(card));
+  void removeCard(Card card, MoveMethod method) {
+    assert(canMoveCard(card, method));
     _cards.removeLast();
     _fanOutTopCards();
   }
